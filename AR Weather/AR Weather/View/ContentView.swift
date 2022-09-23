@@ -11,9 +11,10 @@ import RealityKit
 struct ContentView: View {
     @State var cityName: String = "London"
     @State var isSearchBarVisible: Bool = true
-    @State var temp: String = "0"
+    @State var temp: Double = 0
     @State var condition: String = ""
     @ObservedObject var weatherVm = WeatherNetworkManagerViewModel()
+    
     var body: some View {
         ZStack{
             ARViewDisplay()
@@ -36,9 +37,10 @@ struct ContentView: View {
                 weatherVm.fetchData(cityName: newCity)
             }
             .onReceive(weatherVm.$recievedWeatherData) { recievedData in
-                    
-                    temp = recievedData?.temperatureString ?? "0"
-                    condition = recievedData?.conditionName ?? "Nothing here"
+                if let latestData = recievedData{
+                    ARViewModel.singleton.recievedWeatherData = latestData
+                }
+                
       
         }
         
