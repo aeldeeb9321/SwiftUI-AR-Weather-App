@@ -19,15 +19,15 @@ struct WeatherModel{
     //computedProperty always have to be a var
     var conditionName: String {
         switch conditionId{
-            case 200...232: return "cloud.bolt"
-            case 300...321: return "cloud.drizzle"
-            case 500...531: return "cloud.rain"
-            case 600...622: return "cloud.snow"
-            case 700...780: return "cloud.fog"
+            case 200...232: return "thunder"
+            case 300...321: return "rainy"
+            case 500...531: return "rainy"
+            case 600...622: return "snow"
+            case 700...780: return "fog"
             case 781: return "tornado"
-            case 800: return "sun.max"
-            case 801...804: return "cloud.bolt"
-            default: return "cloud"
+            case 800: return "sunny"
+            case 801...804: return "thunder"
+            default: return "normal"
         }
 
     }

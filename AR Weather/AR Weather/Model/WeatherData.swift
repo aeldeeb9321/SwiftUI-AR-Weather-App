@@ -19,4 +19,5 @@ struct Main: Codable{
 
 struct Weather: Codable{
     let id: Int
+    let main: String
 }

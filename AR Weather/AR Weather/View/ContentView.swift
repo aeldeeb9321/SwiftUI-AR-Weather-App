@@ -6,30 +6,50 @@
 //
 
 import SwiftUI
-
+import ARKit
+import RealityKit
 struct ContentView: View {
-    @State var cityName: String
+    @State var cityName: String = "London"
     @State var isSearchBarVisible: Bool = true
+    @State var temp: String = "0"
+    @State var condition: String = ""
+    @ObservedObject var weatherVm = WeatherNetworkManagerViewModel()
     var body: some View {
-        VStack {
-            if isSearchBarVisible{
-                //search bar
-                SearchBar(cityName: $cityName)
+        ZStack{
+            ARViewDisplay()
+            VStack {
+                
+                if isSearchBarVisible{
+                    //search bar
+                    SearchBar(cityName: $cityName)
+                }
+                
+                Spacer()
+                
+                //search toggle
+                SearchToggle(isSearchToggle: $isSearchBarVisible)
+                    .transition(.scale)
             }
-            
-            Spacer()
-            //search toggle
-            SearchToggle(isSearchToggle: $isSearchBarVisible)
-                .transition(.scale)
+            .padding()
+            //triggers an action whenever a certain variable changes, we will call this whenever the city name is changes
+            .onChange(of: cityName) { newCity in
+                weatherVm.fetchData(cityName: newCity)
+            }
+            .onReceive(weatherVm.$recievedWeatherData) { recievedData in
+                    
+                    temp = recievedData?.temperatureString ?? "0"
+                    condition = recievedData?.conditionName ?? "Nothing here"
+      
         }
         
-        .padding()
+            
+        }
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView(cityName: "London")
+        ContentView()
     }
 }
 
@@ -42,7 +62,7 @@ struct SearchBar: View{
             Image(systemName: "magnifyingglass.circle.fill")
                 .font(.system(size: 30))
             TextField("Search", text: $searchText) { value in
-                print("typing in progress")
+              
             } onCommit: {
                 //when the user has finished typing his text we need to store whats contained in another var which we will pass to the main view
                 cityName = searchText
@@ -71,4 +91,25 @@ struct SearchToggle: View{
         }
 
     }
+}
+
+struct ARViewDisplay: View{
+    var body: some View{
+        ARViewContainer().edgesIgnoringSafeArea(.all)
+    }
+}
+
+struct ARViewContainer: UIViewRepresentable{
+    typealias UIViewType = ARView
+    
+    func makeUIView(context: Context) -> ARView {
+        //Note: If we want access to the ARViewModel singleton globally we need to make it an environent object
+        ARViewModel.singleton.startARSession()
+        return ARViewModel.singleton.arView
+    }
+    
+    func updateUIView(_ uiView: ARView, context: Context) {
+        
+    }
+    
 }

@@ -11,7 +11,8 @@ import SwiftUI
 struct AR_WeatherApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView(cityName: "London")
+            ContentView()
+                .environmentObject(ARViewModel.singleton)
         }
     }
 }

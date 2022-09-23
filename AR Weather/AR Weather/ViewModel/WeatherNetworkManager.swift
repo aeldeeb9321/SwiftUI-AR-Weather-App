@@ -7,47 +7,59 @@
 
 import Foundation
 
-//We create the protocol in the same file that will use the protocol
-protocol WeatherManagerDelegate{
-    func didUpdateWeather(_ weatherManager: WeatherNetworkManager,weather: WeatherModel)
-    func didFailWithError(error: Error)
-}
-
-class WeatherNetworkManager{
-    var cityName = ""
-    var delegate: WeatherManagerDelegate?
+class WeatherNetworkManagerViewModel: ObservableObject{
+    @Published var recievedWeatherData: WeatherModel?
+    let weatherURL = "https://api.openweathermap.org/data/2.5/weather?appid=YOURAPPID&units=imperial"
     //Feathc data
-    func downloadData(fromURL url: URL, completionHandler: @escaping (_ data: Data?) -> Void){
-        URLSession.shared.dataTask(with: url) { data, response, error in
-            guard
-                let data = data,
-                error == nil,
-                let response = response as? HTTPURLResponse,
-                response.statusCode >= 200 && response.statusCode < 300
-            else{
-                print("Error downloading data.")
-                completionHandler(nil)
-                return
+    func fetchData(cityName: String){
+        let weatherURLString = "\(weatherURL)&q=\(cityName)"
+        if let url = URL(string: weatherURLString){
+            //URL session
+            let session = URLSession(configuration: .default)
+            //Fetching task
+            let task = session.dataTask(with: url) { data, response, error in
+                guard
+                    let data = data,
+                    error == nil,
+                    let response = response as? HTTPURLResponse,
+                    response.statusCode >= 200 && response.statusCode < 300
+                else{
+                    fatalError("\(String(describing: error?.localizedDescription))")
+                }
+                //decoded
+                if let decodedData = self.decodeJSONData(recievedData: data){
+                    //convert to a usable form
+                    let decodedWeatherData = self.convertDecodedDataToUsableForm(decodedData: decodedData)
+                    
+                    //pass data
+                    self.passData(decodedWeatherData)
+                }
             }
-            completionHandler(data)
-            
-        }.resume()
+            task.resume()
+        }
+        
     }
-    //pass data
-    private func passData(){
-        guard let weatherURL = URL(string: "https://api.openweathermap.org/data/2.5/weather?q=\(cityName)&appid=50cdbf283604cae768327b23d83bc887")  else{return}
-        downloadData(fromURL: weatherURL) { returnedData in
-            if let recievedData = returnedData{
-                //decode data and then convert to usable form in app
-                guard let weather = try? JSONDecoder().decode(WeatherData.self, from: recievedData) else{return}
-                let id = weather.weather[0].id
-                let temp = weather.main.temp
-                let name = weather.name
-                let decodedWeather = WeatherModel(cityName: name, temperature: temp, conditionId: id)
-                
-            }else{
-                print("No data returned")
-            }
+    //Accepts recieved data, decodes it, and stores it inside WeatherDataDecodedModel
+    private func decodeJSONData(recievedData: Data) -> WeatherData?{
+        let decoder = JSONDecoder()
+        do{
+            let decodedData = try decoder.decode(WeatherData.self, from: recievedData)
+            return decodedData
+        }catch{
+            return nil
+        }
+    }
+ 
+    private func convertDecodedDataToUsableForm(decodedData: WeatherData) -> WeatherModel{
+        let weatherData = WeatherModel(cityName: decodedData.name, temperature: decodedData.main.temp, conditionId: decodedData.weather[0].id)
+        return weatherData
+    }
+    
+    //We want to pass the decodedWeatherData to our main function
+    private func passData(_ weatherData: WeatherModel){
+        DispatchQueue.main.async {
+            self.recievedWeatherData = weatherData //so everytime a new set of data is recieved, our publish var will update an subscribers
+
         }
     }
 }
